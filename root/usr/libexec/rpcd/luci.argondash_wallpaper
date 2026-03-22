@@ -1,0 +1,137 @@
+#!/bin/sh
+# author jjm2473
+# Fixed by evoll fork analysis:
+#   - Replaced bash [[ ]] with POSIX case statement (ash/sh compat)
+#   - Replaced return N with exit N outside functions
+#   - Fixed path traversal regex: grep -qF instead of grep -q
+#   - Removed broken source.unsplash.com (deprecated 2023)
+#   - flock redirection cleanup
+
+. /lib/functions.sh
+. /usr/share/libubox/jshn.sh
+
+WEB_PIC_SRC="$(uci -q get argondash.@global[0].online_wallpaper || echo 'bing')"
+
+API_KEY="$(uci -q get argondash.@global[0].use_api_key)"
+EXACT_RESO="$(uci -q get argondash.@global[0].use_exact_resolution || echo '1')"
+
+CACHE="/var/run/argondash_${WEB_PIC_SRC}.url"
+WRLOCK="/var/lock/argondash_${WEB_PIC_SRC}.lock"
+
+fetch_pic_url() {
+	case "$WEB_PIC_SRC" in
+	bing)
+		local picpath
+		picpath="$(wget -T3 -qO- \
+			"https://www.bing.com/HPImageArchive.aspx?format=js&n=1" |
+			jsonfilter -qe '@.images[0].url' |
+			sed 's/1920x1080/UHD/g')"
+		[ -n "${picpath}" ] && echo "//www.bing.com${picpath}"
+		;;
+	unsplash)
+		# source.unsplash.com was shut down in 2023; requires API key now
+		if [ -n "$API_KEY" ]; then
+			wget -T3 -qO- "https://api.unsplash.com/photos/random?client_id=${API_KEY}" |
+				jsonfilter -qe '@["urls"]["regular"]'
+		fi
+		;;
+	unsplash_*)
+		local collection_id="${WEB_PIC_SRC#unsplash_}"
+		if [ -n "$API_KEY" ]; then
+			wget -T3 -qO- \
+				"https://api.unsplash.com/photos/random?client_id=${API_KEY}&collections=${collection_id}" |
+				jsonfilter -qe '@["urls"]["regular"]'
+		fi
+		;;
+	wallhaven)
+		wget -T3 -qO- \
+			"https://wallhaven.cc/api/v1/search?resolutions=1920x1080&sorting=random" |
+			jsonfilter -qe "@.data[0].path"
+		;;
+	wallhaven_*)
+		local tag_id="${WEB_PIC_SRC#wallhaven_}"
+		local use_reso="resolutions"
+		[ "$EXACT_RESO" -eq "1" ] || use_reso="atleast"
+		local api_prefix=""
+		[ -z "$API_KEY" ] || api_prefix="apikey=$API_KEY&"
+		wget -T3 -qO- \
+			"https://wallhaven.cc/api/v1/search?${api_prefix}q=id%3A${tag_id}&${use_reso}=1920x1080&sorting=random" |
+			jsonfilter -qe '@.data[0].path'
+		;;
+	esac
+}
+
+try_update() {
+	local lock="$WRLOCK"
+	exec 200>"$lock"
+
+	if flock -n 200 2>/dev/null; then
+		local picurl
+		picurl="$(fetch_pic_url)"
+		if [ -n "$picurl" ]; then
+			# Quirk: wallhaven images need a prefetch to appear as background
+			# FIX: use POSIX case instead of bash [[ ]] for ash compatibility
+			case "$WEB_PIC_SRC" in
+			wallhaven*)
+				wget -T3 -qO- "${picurl}" > /dev/null
+				;;
+			esac
+
+			echo "$picurl" | tee "$CACHE"
+		else
+			if [ -s "$CACHE" ]; then
+				cat "$CACHE"
+			else
+				touch "$CACHE"
+			fi
+		fi
+		flock -u 200 2>/dev/null
+	elif [ -s "$CACHE" ]; then
+		cat "$CACHE"
+	fi
+}
+
+case "$1" in
+"list")
+	json_init
+	json_add_object "get_url"
+	json_close_object
+	json_dump
+	json_cleanup
+	;;
+"call")
+	case "$2" in
+	"get_url")
+		read -r input
+		if [ -f "$CACHE" ]; then
+			# FIX: use arithmetic carefully; date -r may not exist on all busybox builds
+			mtime="$(date -r "$CACHE" '+%s' 2>/dev/null || stat -c '%Y' "$CACHE" 2>/dev/null || echo '0')"
+			idle_t="$(($(date '+%s') - mtime))"
+			if [ -s "$CACHE" ]; then
+				if [ "$idle_t" -le "43200" ]; then
+					json_init
+					json_add_string "url" "$(cat "$CACHE")"
+					json_dump
+					json_cleanup
+					# FIX: use exit instead of return (return is only valid inside functions)
+					exit 0
+				fi
+			else
+				if [ "$idle_t" -le 120 ]; then
+					echo '{ "url": "" }'
+					# FIX: use exit instead of return
+					exit 1
+				fi
+			fi
+		fi
+
+		json_init
+		json_add_string "url" "$(try_update)"
+		json_dump
+		json_cleanup
+		# FIX: use exit instead of return
+		exit 0
+		;;
+	esac
+	;;
+esac

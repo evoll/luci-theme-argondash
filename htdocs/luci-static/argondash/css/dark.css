@@ -1,0 +1,197 @@
+/*
+ * ArgonDash Theme — Dark mode overrides (Argon Dashboard 2 adaptation)
+ * Activated via:
+ *   - @media (prefers-color-scheme: dark)  when mode == 'normal'
+ *   - unconditionally                      when mode == 'dark'
+ */
+
+:root {
+  --primary: #5e72e4;
+  --dark-primary: #344675;
+  --header-color: #e2e8f0;
+  --topbar-bg: rgba(26, 26, 46, 0.92);
+  --menu-bg-color: #1a1a2e;
+  --menu-color: rgba(255,255,255,0.65);
+  --main-menu-color: #e2e8f0;
+  --sidebar-bg-from: #1a1a2e;
+  --sidebar-bg-to: #0d0d1a;
+  --page-banner-from: #0d0d1a;
+  --page-banner-to: #16213e;
+  --background-color: #0f0f1a;
+  --login-form-bg-color: rgba(255,255,255,0.08);
+  --white: #1e1e2e;
+  --gray-dark: #c8d3e0;
+  --lighter: #2a2a3e;
+  --light: #3a3a50;
+  --dropdown-arrow-icon: url("data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjYThiMmM0IiBkPSJNNS4yOTMgOS4yOTNhMSAxIDAgMCAxIDEuNDE0IDBMMTIgMTQuNTg2bDUuMjkzLTUuMjkzYTEgMSAwIDEgMSAxLjQxNCAxLjQxNGwtNiA2YTEgMSAwIDAgMS0xLjQxNCAwbC02LTZhMSAxIDAgMCAxIDAtMS40MTQiLz48L3N2Zz4=");
+}
+
+/* === Body & page === */
+body {
+  background-color: #0f0f1a;
+  color: #c8d3e0;
+}
+
+/* === Topbar === */
+header {
+  background: rgba(13, 13, 26, 0.92) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 2px 16px rgba(0,0,0,.4);
+}
+header .fill .status span {
+  color: #c8d3e0;
+}
+
+/* === Page banner === */
+.main-right > #maincontent::before {
+  background: linear-gradient(195deg, #1a1a2e 0%, #0d0d1a 100%);
+}
+
+/* === Cards / sections === */
+.cbi-section,
+.cbi-section-error,
+#iptables,
+.Firewall form,
+#cbi-network > .cbi-section-node,
+#cbi-wireless > .cbi-section-node,
+#cbi-wireless > #wifi_assoclist_table,
+[data-tab-title],
+[data-page^="admin-system-admin"]:not(.node-main-login) .cbi-map:not(#cbi-dropbear),
+[data-page="admin-system-opkg"] #maincontent > .container {
+  background-color: #1a1a2e;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+
+h2 {
+  background: #1a1a2e;
+  color: #c8d3e0;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+h3 {
+  background: #1a1a2e;
+  color: #c8d3e0;
+}
+
+/* === Table === */
+div > table > tbody > tr:nth-of-type(2n),
+div > .table > .tr:nth-of-type(2n) {
+  background-color: #161626;
+}
+tr > td, tr > th,
+.tr > .td, .tr > .th,
+.cbi-section-table-row::before {
+  border-top-color: #2a2a3e;
+}
+#cbi-wireless .td,
+.table[width="100%"] > .tr:first-child > .td,
+[data-page="admin-network-diagnostics"] .tr > .td,
+.tr.table-titles > .th,
+.tr.cbi-section-table-titles > .th {
+  background-color: #131323;
+}
+.table .table-titles th {
+  background-color: #131323;
+}
+.cbi-section-table-row {
+  background: #131323;
+}
+
+/* === Form inputs === */
+.btn, button, select, input, .cbi-dropdown {
+  color: #a8b2c4;
+  border-color: #2a2a3e;
+  background-color: #1a1a2e;
+}
+select {
+  background-color: #1a1a2e;
+  color: #a8b2c4;
+}
+
+/* === Tabs === */
+.tabs {
+  background-color: #1a1a2e;
+}
+.tabs li {
+  color: #7b8fa6;
+}
+.tabs li a { color: #7b8fa6; }
+
+.cbi-tabmenu li {
+  background: #131323;
+  color: #7b8fa6;
+}
+.cbi-tabmenu li a { color: #7b8fa6; }
+.cbi-tabmenu li[class~="cbi-tab"] {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* === Buttons === */
+.btn, .cbi-button, .item::after {
+  background-color: #252540;
+}
+
+/* === Modal / alerts === */
+.alert, .alert-message, .modal {
+  background-color: #1a1a2e;
+  color: #c8d3e0;
+}
+.modal > h4 { color: #c8d3e0; }
+
+/* === Dropdowns === */
+.cbi-dropdown[open] > ul.dropdown {
+  background: #1a1a2e;
+  color: #c8d3e0;
+  box-shadow: 0 0 12px rgba(0,0,0,.5);
+}
+.cbi-dropdown[open] > ul.dropdown > li { color: #c8d3e0; border-bottom-color: #2a2a3e; }
+.cbi-dropdown[open] > ul.dropdown > li[selected],
+.cbi-dropdown[open] > ul.dropdown > li.focus { background: #252540; }
+
+/* === Progress bar === */
+.cbi-progressbar {
+  background-color: #252540;
+}
+
+/* === Footer === */
+footer { color: #4a5568; }
+footer > a, footer a { color: #4a5568; }
+
+/* === CBI value rows === */
+.cbi-value { color: #c8d3e0; }
+.cbi-value-description { color: #5a6a80; }
+.cbi-value-title { color: #8899aa; }
+.cbi-rowstyle-1 { background-color: #161626; }
+.cbi-rowstyle-2 { background-color: #131323; }
+
+/* === Dynlist items === */
+.cbi-dynlist > .item > span {
+  border-color: #2a2a3e;
+  background: #1a1a2e;
+  color: #a8b2c4;
+}
+.cbi-dynlist > .add-item input {
+  border-color: #2a2a3e;
+  color: #a8b2c4;
+}
+
+/* === Scrollbars === */
+::-webkit-scrollbar-thumb { background: #2a2a3e; }
+::-webkit-scrollbar-track { background: #0f0f1a; }
+
+/* === Login page dark === */
+.login-page {
+  background: linear-gradient(135deg, #07070f 0%, #0d0d1a 50%, #0a1628 100%);
+}
+
+/* === Main content area === */
+.main-right > #maincontent > .container {
+  /* slight dark bg to separate from banner */
+}
+
+/* === Alerts inline === */
+.container .alert, .container .alert-message {
+  background-color: #1a1a2e;
+  color: #c8d3e0;
+}

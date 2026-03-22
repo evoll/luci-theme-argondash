@@ -1,0 +1,27 @@
+#!/bin/sh
+
+changed=0
+
+set_opt() {
+	local key=$1
+	local val=$2
+
+	if ! uci -q get "luci.$key" >/dev/null 2>&1; then
+		uci set "luci.$key=$val"
+		changed=1
+	fi
+}
+
+# Always register the ArgonDash theme path (idempotent)
+set_opt themes.ArgonDash /luci-static/argondash
+
+# Only set as default theme on fresh install, not on upgrade
+if [ "$PKG_UPGRADE" != 1 ] && [ $changed = 1 ]; then
+	uci set luci.main.mediaurlbase=/luci-static/argondash
+fi
+
+if [ $changed = 1 ]; then
+	uci commit luci
+fi
+
+exit 0
