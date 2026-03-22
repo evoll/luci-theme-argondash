@@ -91,6 +91,7 @@ jobs:
             branch_prefix: "23.05"
             is_snapshot: "false"
             pkg_ext: "ipk"
+            version_label: "23.05.x"
             feeds_base:     "https://github.com/openwrt/openwrt.git;openwrt-23.05"
             feeds_packages: "https://github.com/openwrt/packages.git;openwrt-23.05"
             feeds_luci:     "https://github.com/openwrt/luci.git;openwrt-23.05"
@@ -100,6 +101,7 @@ jobs:
             branch_prefix: "24.10"
             is_snapshot: "false"
             pkg_ext: "ipk"
+            version_label: "24.10.x"
             feeds_base:     "https://github.com/openwrt/openwrt.git;openwrt-24.10"
             feeds_packages: "https://github.com/openwrt/packages.git;openwrt-24.10"
             feeds_luci:     "https://github.com/openwrt/luci.git;openwrt-24.10"
@@ -109,6 +111,7 @@ jobs:
             branch_prefix: "25.12"
             is_snapshot: "false"
             pkg_ext: "apk"
+            version_label: "25.12.x"
             feeds_base:     "https://github.com/openwrt/openwrt.git;openwrt-25.12"
             feeds_packages: "https://github.com/openwrt/packages.git;openwrt-25.12"
             feeds_luci:     "https://github.com/openwrt/luci.git;openwrt-25.12"
@@ -118,6 +121,7 @@ jobs:
             branch_prefix: ""
             is_snapshot: "true"
             pkg_ext: "apk"
+            version_label: "Snap"
             feeds_base:     "https://github.com/openwrt/openwrt.git;main"
             feeds_packages: "https://github.com/openwrt/packages.git;master"
             feeds_luci:     "https://github.com/openwrt/luci.git;master"
@@ -247,10 +251,25 @@ jobs:
           make package/luci-theme-argondash/compile -j$(nproc) V=s BUILD_LOG=1
 
           mkdir -p ../output
+          # Читаем PKG_RELEASE из Makefile пакета
+          PKG_REL=$(grep -oP 'PKG_RELEASE:=\K.*' \
+            package/downloads/luci-theme-argondash/Makefile 2>/dev/null || echo "1")
+          # Переименовываем: вставляем метку версии OpenWrt в имя файла
+          # С ревизией:    _1.0.1-r20260314_all.ipk → _1.0.1-24.10.x_r20260314.ipk
+          # Без ревизии:   _1.0.1_all.ipk           → _1.0.1-23.05.x_r1.ipk
           for pkg in bin/packages/x86_64/base/luci-theme*.${{ matrix.pkg_ext }}; do
             [ -f "${pkg}" ] || continue
-            base=$(basename "${pkg}" .${{ matrix.pkg_ext }})
-            cp "${pkg}" "../output/${base}-openwrt${{ matrix.openwrt_version }}.${{ matrix.pkg_ext }}"
+            base=$(basename "${pkg}")
+            if echo "$base" | grep -q '\-r[0-9]'; then
+              newname=$(echo "$base" | sed \
+                -e 's/-r\([0-9]\)/-${{ matrix.version_label }}_r\1/' \
+                -e 's/_all\././')
+            else
+              newname=$(echo "$base" | sed \
+                -e 's/_all\././' \
+                -e "s/\.\(ipk\|apk\)\$/-${{ matrix.version_label }}_r${PKG_REL}.\1/")
+            fi
+            cp "${pkg}" "../output/${newname}"
           done
 
           echo "status=success" >> $GITHUB_OUTPUT
