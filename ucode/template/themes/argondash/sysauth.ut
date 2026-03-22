@@ -1,5 +1,5 @@
 {#
-	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-material Argon Template
+	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-bootstrap and MUI and Argon Template
 
 	luci-theme-argondash
 	Copyright 2026 evoll <evoll@qq.com>
@@ -7,9 +7,13 @@
 	Have a bug? Please create an issue here on GitHub!
 	https://github.com/evoll/luci-theme-argondash/issues
 
-	luci-theme-material:
-	Copyright 2015 Lutty Yang <lutty@wcan.in>
+	luci-theme-bootstrap:
+	Copyright 2008 Steven Barth <steven@midlink.org>
+	Copyright 2008-2016 Jo-Philipp Wich <jow@openwrt.org>
+	Copyright 2012 David Menting <david@nut-bolt.nl>
 
+	MUI:
+	https://github.com/muicss/mui
 	ArgonDash Theme
 	https://demos.creative-tim.com/argon-dashboard/index.html
 
@@ -23,6 +27,8 @@
 	import { rand } from 'math';
 
 	let cfg = cursor();
+
+	//Fetch Local Background Media
 
 	const imageTypes = " jpg jpeg png gif webp ";
 	const videoTypes = " mp4 webm ";
@@ -116,7 +122,7 @@
 			</a>
 			<!-- Logo End -->
 			<!-- Login Form Start -->
-			<form class="form-login" method="post" action="{{ entityencode(http.getenv('REQUEST_URI'), true) }}">
+			<form class="form-login" method="post" action="{{ http.getenv("REQUEST_URI") }}">
 
 				{%- if (fuser): %}
 				<div class="errorbox">{{ _('Invalid username and/or password! Please try again.') }}</div>
