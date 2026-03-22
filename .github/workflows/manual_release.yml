@@ -3,14 +3,6 @@
 # Description: Auto compile
 #
 
-#
-# Fork and compile the latest version yourself using Github Actions
-#   1.Into the repository of your own fork
-#   2.Into the repository [Settings]
-#   3.[Code and automation - Actions] ↓ [General] → [Workflow permissions] ↓  Check the [Read and write permissions] and [Save]
-#   4.Let's take [Actions]
-#
-
 name: "Build luci-theme-argondash (multi-version)"
 
 on:
@@ -33,6 +25,8 @@ jobs:
     name: Check Version
     runs-on: ubuntu-latest
     if: github.repository == 'evoll/luci-theme-argondash'
+    permissions:
+      contents: write
     outputs:
       argon_version: ${{ steps.check_version.outputs.latest_version }}
       has_update:    ${{ steps.check_version.outputs.has_update }}
@@ -84,6 +78,8 @@ jobs:
     needs: job_check
     if: needs.job_check.outputs.has_update == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
@@ -156,7 +152,7 @@ jobs:
           else
             # Ищем последний патч-релиз ветки (например, 23.05.6, 23.05.7...)
             LATEST=$(wget -qO- "${INDEX_BASE}/releases/" \
-              | grep -oP "(?<=\")${{ matrix.branch_prefix }}\.[0-9]+(?=\")" \
+              | grep -oP 'href="\K${{ matrix.branch_prefix }}\.[0-9]+(?=/")' \
               | sort -V | tail -1)
 
             if [ -z "${LATEST}" ]; then
@@ -180,22 +176,14 @@ jobs:
           fi
 
           SDK_URL="${INDEX_URL}${SDK_FILE}"
-
-          # Определяем формат архива по расширению
-          if [[ "${SDK_FILE}" == *.tar.xz ]]; then
-            SDK_FORMAT="xz"
-          else
-            SDK_FORMAT="zst"
-          fi
+          [[ "${SDK_FILE}" == *.tar.xz ]] && SDK_FORMAT="xz" || SDK_FORMAT="zst"
 
           echo "SDK_URL=${SDK_URL}"       >> $GITHUB_ENV
           echo "SDK_FORMAT=${SDK_FORMAT}" >> $GITHUB_ENV
           echo "CACHE_KEY=${CACHE_KEY}"   >> $GITHUB_ENV
-          echo "=== SDK resolved ==="
-          echo "  File   : ${SDK_FILE}"
-          echo "  URL    : ${SDK_URL}"
-          echo "  Format : ${SDK_FORMAT}"
-          echo "  Cache  : ${CACHE_KEY:-<no cache>}"
+          echo "  File  : ${SDK_FILE}"
+          echo "  URL   : ${SDK_URL}"
+          echo "  Cache : ${CACHE_KEY:-<no cache>}"
 
       # Кэш только для стабильных версий (CACHE_KEY непустой)
       - name: Cache OpenWrt SDK (${{ matrix.openwrt_version }})
@@ -212,7 +200,6 @@ jobs:
           wget -q "${SDK_URL}"
           archive=$(basename "${SDK_URL}")
           mkdir -p sdk
-
           if [ "${SDK_FORMAT}" = "zst" ]; then
             tar --zstd -xf "${archive}" -C ./sdk --strip-components=1
           else
@@ -223,11 +210,12 @@ jobs:
         if: env.CACHE_KEY == '' || steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
           cd sdk
+          # Без отступов — иначе пробелы попадут в feeds.conf и feeds update упадёт
           cat > feeds.conf << EOF
-          src-git base     ${{ matrix.feeds_base }}
-          src-git packages ${{ matrix.feeds_packages }}
-          src-git luci     ${{ matrix.feeds_luci }}
-          EOF
+src-git base     ${{ matrix.feeds_base }}
+src-git packages ${{ matrix.feeds_packages }}
+src-git luci     ${{ matrix.feeds_luci }}
+EOF
 
           git clone -b main \
             https://github.com/${{ github.repository }}.git \
@@ -243,21 +231,22 @@ jobs:
           cd sdk
           ./scripts/feeds install luci-theme-argondash
           cat > .config << 'EOF'
-          CONFIG_ALL_NONSHARED=n
-          CONFIG_ALL_KMODS=n
-          CONFIG_ALL=n
-          CONFIG_AUTOREMOVE=n
-          CONFIG_LUCI_LANG_zh_Hans=y
-          CONFIG_PACKAGE_luci-theme-argondash=m
-          EOF
+CONFIG_ALL_NONSHARED=n
+CONFIG_ALL_KMODS=n
+CONFIG_ALL=n
+CONFIG_AUTOREMOVE=n
+CONFIG_LUCI_LANG_ru=y
+CONFIG_PACKAGE_luci-theme-argondash=m
+EOF
           make defconfig
 
       - name: Compile luci-theme-argondash
         id: compile
         run: |
           cd sdk
-          make package/luci-theme-argondash/{clean,compile} -j$(nproc) V=s 2>&1 | \
-            grep -E "^(make|ERROR|WARNING)" || true
+          # Разделяем clean и compile — brace expansion надёжнее как две цели
+          make package/luci-theme-argondash/clean   -j$(nproc) V=s
+          make package/luci-theme-argondash/compile -j$(nproc) V=s BUILD_LOG=1
 
           mkdir -p ../output
           for pkg in bin/packages/x86_64/base/luci-theme*.${{ matrix.pkg_ext }}; do
