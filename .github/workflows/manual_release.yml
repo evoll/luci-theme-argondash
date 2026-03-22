@@ -16,7 +16,7 @@ name: "Build luci-theme-argondash (multi-version)"
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["main"]
     paths:
       - "luci-theme-argondash/Makefile"
 
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: master
+          ref: main
 
       - name: Check version
         id: check_version
@@ -129,7 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
 
       - name: Install build dependencies
         run: |
@@ -229,7 +229,7 @@ jobs:
           src-git luci     ${{ matrix.feeds_luci }}
           EOF
 
-          git clone -b master \
+          git clone -b main \
             https://github.com/${{ github.repository }}.git \
             package/downloads/luci-theme-argondash
 
