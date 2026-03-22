@@ -1,159 +1,93 @@
 {#
-	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-material Argon Template
-
 	luci-theme-argondash
 	Copyright 2026 evoll <evoll@qq.com>
-
-	Have a bug? Please create an issue here on GitHub!
-	https://github.com/evoll/luci-theme-argondash/issues
-
-	luci-theme-material:
-	Copyright 2015 Lutty Yang <lutty@wcan.in>
-
-	ArgonDash Theme
-	https://demos.creative-tim.com/argon-dashboard/index.html
-
-	Licensed to the public under the Apache License 2.0
+	Licensed to the public under the Apache License 2.0.
 -#}
 
 {%
 	import { readfile, access } from 'fs';
 	import { cursor } from 'uci';
-	import { srand } from 'math';
 	import { getuid, getspnam } from 'luci.core';
 
-	const boardinfo = ubus.call("system", "board");
-	const hostname = striptags(boardinfo?.hostname ?? '?');
+	const boardinfo = ubus.call('system', 'board');
+	const hostname  = striptags(boardinfo?.hostname ?? '?');
 
-	let cfg = cursor();
-
-	//send as HTML5
 	http.prepare_content('text/html; charset=UTF-8');
 
-	srand(+substr(reverse(time() + ""), 0, 8));
-
-	//Custom settings
-	let mode = 'normal';
-	let bar_color = '#5e72e4';
-	let primary = '#5e72e4';
-	let dark_primary = '#344675';
-	let blur_radius = '10';
+	let mode       = 'normal';
+	let primary    = '#5e72e4';
+	let dark_primary   = '#344675';
+	let blur_radius    = '10';
 	let blur_radius_dark = '10';
-	let blur_opacity = '0.5';
+	let blur_opacity   = '0.5';
 	let blur_opacity_dark = '0.5';
-	// AD2 sidebar and page banner gradient defaults
 	let sidebar_from = '#42424a';
-	let sidebar_to = '#191919';
-	let banner_from = '#42424a';
-	let banner_to = '#191919';
+	let sidebar_to   = '#191919';
+	let banner_from  = '#42424a';
+	let banner_to    = '#191919';
+	let dark_css = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
 
-	// FIX: Guard dark_css against null — readfile() returns null if file is missing.
-	// Without this, {{ dark_css }} outputs the literal string "null" into the CSS block.
-	const dark_css = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
+	try {
+		let cfg = cursor();
+		if (access('/etc/config/argondash')) {
+			primary       = cfg.get_first('argondash', 'global', 'primary')           ?? primary;
+			dark_primary  = cfg.get_first('argondash', 'global', 'dark_primary')       ?? dark_primary;
+			blur_radius   = cfg.get_first('argondash', 'global', 'blur')               ?? blur_radius;
+			blur_radius_dark = cfg.get_first('argondash', 'global', 'blur_dark')       ?? blur_radius_dark;
+			blur_opacity  = cfg.get_first('argondash', 'global', 'transparency')       ?? blur_opacity;
+			blur_opacity_dark = cfg.get_first('argondash', 'global', 'transparency_dark') ?? blur_opacity_dark;
+			mode          = cfg.get_first('argondash', 'global', 'mode')               ?? mode;
+			sidebar_from  = cfg.get_first('argondash', 'global', 'sidebar_from')       ?? sidebar_from;
+			sidebar_to    = cfg.get_first('argondash', 'global', 'sidebar_to')         ?? sidebar_to;
+			banner_from   = cfg.get_first('argondash', 'global', 'banner_from')        ?? banner_from;
+			banner_to     = cfg.get_first('argondash', 'global', 'banner_to')          ?? banner_to;
+		}
+	} catch (e) {}
 
-	if (access('/etc/config/argondash')) {
-		primary          = cfg.get_first('argondash', 'global', 'primary')            ?? primary;
-		dark_primary     = cfg.get_first('argondash', 'global', 'dark_primary')        ?? dark_primary;
-		blur_radius      = cfg.get_first('argondash', 'global', 'blur')                ?? blur_radius;
-		blur_radius_dark = cfg.get_first('argondash', 'global', 'blur_dark')           ?? blur_radius_dark;
-		blur_opacity     = cfg.get_first('argondash', 'global', 'transparency')        ?? blur_opacity;
-		blur_opacity_dark= cfg.get_first('argondash', 'global', 'transparency_dark')   ?? blur_opacity_dark;
-		mode             = cfg.get_first('argondash', 'global', 'mode')                ?? mode;
-		sidebar_from     = cfg.get_first('argondash', 'global', 'sidebar_from')        ?? sidebar_from;
-		sidebar_to       = cfg.get_first('argondash', 'global', 'sidebar_to')          ?? sidebar_to;
-		banner_from      = cfg.get_first('argondash', 'global', 'banner_from')         ?? banner_from;
-		banner_to        = cfg.get_first('argondash', 'global', 'banner_to')           ?? banner_to;
-		bar_color        = (mode == 'dark') ? dark_primary : primary;
-	}
-
+	const bar_color = (mode == 'dark') ? dark_primary : primary;
 -%}
 <!DOCTYPE html>
 <html lang="{{ dispatcher.lang }}">
-
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<!-- FIX: use 'dispatched' (the correct LuCI env var) instead of undefined 'node'.
-	     runtime.uc sets env.dispatched = resolved.node; there is no env.node. -->
-	<title>{{ striptags(hostname + (dispatched?.title ? ` - ${_(dispatched.title)}` : '') + ' - LuCI') }}</title>
-
-	<!-- SEO -->
+	<meta name="darkreader-lock">
+	<title>{{ striptags(hostname + (dispatched?.title ? ` | ${_(dispatched.title)}` : '')) }} - LuCI</title>
 	<meta name="robots" content="noindex, nofollow">
-
-	<!-- Security -->
-	<meta http-equiv="X-Content-Type-Options" content="nosniff">
-	<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
-	<meta http-equiv="X-XSS-Protection" content="1; mode=block">
-	<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-
-	<!-- Mobile and PWA -->
-	<meta name="format-detection" content="telephone=no, email=no">
-	<meta name="mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="apple-mobile-web-app-title" content="{{ hostname }} - LuCI">
-
-	<!-- Theme and Colors -->
 	<meta name="theme-color" content="{{ bar_color }}">
-	<meta name="msapplication-TileColor" content="{{ bar_color }}">
-	<meta name="msapplication-TileImage" content="{{ media }}/icon/ms-icon-144x144.png">
-	<meta name="application-name" content="{{ hostname }} - LuCI">
-
-	<!-- Icons and Manifest -->
 	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
-	<link rel="icon" type="image/png" sizes="16x16" href="{{ media }}/icon/favicon-16x16.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="{{ media }}/icon/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="96x96" href="{{ media }}/icon/favicon-96x96.png">
-	<link rel="icon" type="image/png" sizes="192x192" href="{{ media }}/icon/android-icon-192x192.png">
-	<link rel="apple-touch-icon" sizes="60x60" href="{{ media }}/icon/apple-icon-60x60.png">
-	<link rel="apple-touch-icon" sizes="72x72" href="{{ media }}/icon/apple-icon-72x72.png">
-	<link rel="apple-touch-icon" sizes="144x144" href="{{ media }}/icon/apple-icon-144x144.png">
 	<link rel="manifest" href="{{ media }}/icon/manifest.json" crossorigin="use-credentials">
-
-	<!-- FIX: was {# PKG_VERSION #} (ucode comment, never reached browser).
-	     Use version.luciversion + pkgs_update_time for proper cache busting
-	     (pkgs_update_time invalidates cache when packages are updated). -->
-	<link rel="stylesheet" href="{{ media }}/css/cascade.css?v={# PKG_VERSION #}-{{ pkgs_update_time }}">
-	<style title="text/css">
+	<link rel="stylesheet" href="{{ media }}/css/cascade.css?v={{ version.luciversion }}-{{ pkgs_update_time }}">
+	<style>
 		{% if (mode == 'normal'): %}
-			@media (prefers-color-scheme: dark) {
-				{{ dark_css }}
-			}
+		@media (prefers-color-scheme: dark) { {{ dark_css }} }
 		{% endif %}
 		{% if (mode == 'dark'): %}
-			{{ dark_css }}
-		{% endif -%}
-		{% if (access('/etc/config/argondash')): %}
+		{{ dark_css }}
+		{% endif %}
 		:root {
 			--primary: {{ primary }};
 			--dark-primary: {{ dark_primary }};
-			--blur-radius:{{ blur_radius }}px;
-			--blur-opacity:{{ blur_opacity }};
-			--blur-radius-dark:{{ blur_radius_dark }}px;
-			--blur-opacity-dark:{{ blur_opacity_dark }};
+			--blur-radius: {{ blur_radius }}px;
+			--blur-opacity: {{ blur_opacity }};
+			--blur-radius-dark: {{ blur_radius_dark }}px;
+			--blur-opacity-dark: {{ blur_opacity_dark }};
 			--sidebar-bg-from: {{ sidebar_from }};
 			--sidebar-bg-to: {{ sidebar_to }};
 			--page-banner-from: {{ banner_from }};
 			--page-banner-to: {{ banner_to }};
 		}
-		{% endif -%}
 	</style>
-	<!-- FIX: dispatched?.css (was node?.css — node is undefined in LuCI ucode scope) -->
 	{% if (dispatched?.css): %}
 	<link rel="stylesheet" href="{{ resource }}/{{ dispatched.css }}">
-	{% endif -%}
+	{% endif %}
 	{% if (css): %}
-	<style title="text/css">
-		{{ css }}
-	</style>
-	{% endif -%}
-	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}?v={# PKG_VERSION #}-{{ pkgs_update_time }}"></script>
-	<script src="{{ resource }}/cbi.js?v={# PKG_VERSION #}-{{ pkgs_update_time }}"></script>
+	<style>{{ css }}</style>
+	{% endif %}
+	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
+	<script src="{{ resource }}/cbi.js"></script>
 </head>
-
-<!-- body class: use dispatched?.title (correct var), add lua_active compat class -->
-<body
-	class="lang_{{ dispatcher.lang }}{% if (ctx.authsession): %} logged-in{% endif %}{% if (lua_active): %} lua-compat{% endif %}"
+<body class="lang_{{ dispatcher.lang }}{% if (ctx.authsession): %} logged-in{% endif %}"
 	data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
 
 	<div class="main">
@@ -161,9 +95,7 @@
 			<div class="sidenav-header d-flex align-items-center">
 				<a class="brand" href="#">{{ hostname }}</a>
 				<div class="ml-auto">
-					<!-- Sidenav toggler -->
-					<div class="sidenav-toggler d-none d-xl-block active" data-action="sidenav-unpin"
-						data-target="#sidenav-main">
+					<div class="sidenav-toggler d-none d-xl-block active" data-action="sidenav-unpin" data-target="#sidenav-main">
 						<div class="sidenav-toggler-inner">
 							<i class="sidenav-toggler-line"></i>
 							<i class="sidenav-toggler-line"></i>
@@ -192,27 +124,24 @@
 					<div class="alert-message error">
 						<h4>{{ _('No password set!') }}</h4>
 						<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
-						{% if (dispatcher.lookup("admin/system/admin")): %}
-						<div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/admin") }}">{{ _('Go to password configuration...') }}</a></div>
+						{% if (dispatcher.lookup('admin/system/admin')): %}
+						<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/admin') }}">{{ _('Go to password configuration...') }}</a></div>
 						{% endif %}
 					</div>
 					{% endif %}
-
 					{% if (boardinfo?.rootfs_type == 'initramfs'): %}
 					<div class="alert-message warning">
 						<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
 						<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
-						{% if (dispatcher.lookup("admin/system/flash")): %}
-						<div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/flash") }}">{{ _('Go to firmware upgrade...') }}</a></div>
+						{% if (dispatcher.lookup('admin/system/flash')): %}
+						<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/flash') }}">{{ _('Go to firmware upgrade...') }}</a></div>
 						{% endif %}
 					</div>
 					{% endif %}
-
-				<noscript>
-					<div class="alert-message error">
-						<h4>{{ _('JavaScript required!') }}</h4>
-						<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
-					</div>
-				</noscript>
-
+					<noscript>
+						<div class="alert-message error">
+							<h4>{{ _('JavaScript required!') }}</h4>
+							<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+						</div>
+					</noscript>
 					<div id="tabmenu" style="display:none"></div>
