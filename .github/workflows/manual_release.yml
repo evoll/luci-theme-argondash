@@ -211,11 +211,9 @@ jobs:
         run: |
           cd sdk
           # Без отступов — иначе пробелы попадут в feeds.conf и feeds update упадёт
-          cat > feeds.conf << EOF
-src-git base     ${{ matrix.feeds_base }}
-src-git packages ${{ matrix.feeds_packages }}
-src-git luci     ${{ matrix.feeds_luci }}
-EOF
+          printf 'src-git base     ${{ matrix.feeds_base }}\n' >  feeds.conf
+          printf 'src-git packages ${{ matrix.feeds_packages }}\n' >> feeds.conf
+          printf 'src-git luci     ${{ matrix.feeds_luci }}\n'     >> feeds.conf
 
           git clone -b main \
             https://github.com/${{ github.repository }}.git \
@@ -230,14 +228,14 @@ EOF
         run: |
           cd sdk
           ./scripts/feeds install luci-theme-argondash
-          cat > .config << 'EOF'
-CONFIG_ALL_NONSHARED=n
-CONFIG_ALL_KMODS=n
-CONFIG_ALL=n
-CONFIG_AUTOREMOVE=n
-CONFIG_LUCI_LANG_ru=y
-CONFIG_PACKAGE_luci-theme-argondash=m
-EOF
+          {
+            echo "CONFIG_ALL_NONSHARED=n"
+            echo "CONFIG_ALL_KMODS=n"
+            echo "CONFIG_ALL=n"
+            echo "CONFIG_AUTOREMOVE=n"
+            echo "CONFIG_LUCI_LANG_ru=y"
+            echo "CONFIG_PACKAGE_luci-theme-argondash=m"
+          } > .config
           make defconfig
 
       - name: Compile luci-theme-argondash
