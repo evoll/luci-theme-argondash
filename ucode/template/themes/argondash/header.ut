@@ -198,7 +198,7 @@
 					</div>
 					{% endif %}
 
-					{% if (boardinfo.rootfs_type == 'initramfs'): %}
+					{% if (boardinfo?.rootfs_type == 'initramfs'): %}
 					<div class="alert-message warning">
 						<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
 						<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>

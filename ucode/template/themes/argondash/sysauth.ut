@@ -30,7 +30,7 @@
 
 	function fetchMedia(path, themeDir) {
 		let backgroundTable = [];
-		for (f in (fs.lsdir(path))) {
+		for (f in (fs.lsdir(path) ?? [])) {
 			// FIX: split(f, '.') and take the LAST element, not [1].
 			// A filename like "my.background.jpg" with [1] gives "background" instead of "jpg".
 			let parts = split(f, '.');
