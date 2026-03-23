@@ -5,36 +5,9 @@
 -#}
 
 {%
-	import { readfile, access } from 'fs';
-
 	const boardinfo = ubus.call('system', 'board');
 	const hostname = striptags(boardinfo?.hostname ?? '?');
-
 	http.prepare_content('text/html; charset=UTF-8');
-
-	let mode = 'normal';
-	let bar_color = '#5e72e4';
-	let primary, dark_primary, blur_radius, blur_radius_dark, blur_opacity, blur_opacity_dark;
-	let sidebar_from = '#42424a';
-	let sidebar_to   = '#191919';
-	let banner_from  = '#42424a';
-	let banner_to    = '#191919';
-	const dark_css = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
-
-	if (access('/etc/config/argondash')) {
-		primary          = uci.get('argondash', '@global[0]', 'primary');
-		dark_primary     = uci.get('argondash', '@global[0]', 'dark_primary');
-		blur_radius      = uci.get('argondash', '@global[0]', 'blur');
-		blur_radius_dark = uci.get('argondash', '@global[0]', 'blur_dark');
-		blur_opacity     = uci.get('argondash', '@global[0]', 'transparency');
-		blur_opacity_dark = uci.get('argondash', '@global[0]', 'transparency_dark');
-		mode             = uci.get('argondash', '@global[0]', 'mode');
-		sidebar_from     = uci.get('argondash', '@global[0]', 'sidebar_from') ?? sidebar_from;
-		sidebar_to       = uci.get('argondash', '@global[0]', 'sidebar_to')   ?? sidebar_to;
-		banner_from      = uci.get('argondash', '@global[0]', 'banner_from')  ?? banner_from;
-		banner_to        = uci.get('argondash', '@global[0]', 'banner_to')    ?? banner_to;
-		bar_color = (mode == 'dark') ? dark_primary : primary;
-	}
 -%}
 <!DOCTYPE html>
 <html lang="{{ dispatcher.lang }}">
@@ -43,29 +16,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta name="darkreader-lock">
 	<title>{{ striptags(hostname) }} - LuCI</title>
-	<meta name="theme-color" content="{{ bar_color }}">
 	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
-	<link rel="manifest" href="{{ media }}/icon/manifest.json" crossorigin="use-credentials">
 	<link rel="stylesheet" href="{{ media }}/css/cascade.css">
-	<style title="text/css">
-		{% if (mode == 'normal'): %}
-		@media (prefers-color-scheme: dark) { {{ dark_css }} }
-		{% endif %}
-		{% if (mode == 'dark'): %}
-		{{ dark_css }}
-		{% endif %}
-		:root {
-			{% if (primary): %}--primary: {{ primary }};{% endif %}
-			{% if (dark_primary): %}--dark-primary: {{ dark_primary }};{% endif %}
-			{% if (blur_radius): %}--blur-radius: {{ blur_radius }}px;{% endif %}
-			{% if (blur_opacity): %}--blur-opacity: {{ blur_opacity }};{% endif %}
-			{% if (blur_radius_dark): %}--blur-radius-dark: {{ blur_radius_dark }}px;{% endif %}
-			{% if (blur_opacity_dark): %}--blur-opacity-dark: {{ blur_opacity_dark }};{% endif %}
-			--sidebar-bg-from: {{ sidebar_from }};
-			--sidebar-bg-to: {{ sidebar_to }};
-			--page-banner-from: {{ banner_from }};
-			--page-banner-to: {{ banner_to }};
-		}
-	</style>
 </head>
 <body>

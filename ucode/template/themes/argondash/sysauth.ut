@@ -8,6 +8,7 @@
 
 {%
 	import * as fs from 'fs';
+	import { rand } from 'math';
 
 	const imageTypes = ' jpg jpeg png gif webp ';
 	const videoTypes = ' mp4 webm ';
@@ -45,7 +46,6 @@
 
 		const bgs = fetchMedia('/www' + themeDir, themeDir);
 		if (length(bgs) > 0) {
-			import { rand } from 'math';
 			const cur = bgs[rand() % length(bgs)];
 			bgUrl = cur.url;
 			if (index(videoTypes, ' ' + cur.type + ' ') !== -1) {

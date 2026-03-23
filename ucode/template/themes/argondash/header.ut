@@ -5,40 +5,26 @@
 -#}
 
 {%
-	import { readfile, access } from 'fs';
 	import { getuid, getspnam } from 'luci.core';
-	import { rand } from 'math';
 
 	const boardinfo = ubus.call('system', 'board');
 	const hostname = striptags(boardinfo?.hostname ?? '?');
 
 	http.prepare_content('text/html; charset=UTF-8');
 
-	rand();
-
-	let mode = 'normal';
-	let bar_color = '#5e72e4';
-	let primary, dark_primary, blur_radius, blur_radius_dark, blur_opacity, blur_opacity_dark;
-	let sidebar_from = '#42424a';
-	let sidebar_to   = '#191919';
-	let banner_from  = '#42424a';
-	let banner_to    = '#191919';
-	const dark_css = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
-
-	if (access('/etc/config/argondash')) {
-		primary          = uci.get('argondash', '@global[0]', 'primary');
-		dark_primary     = uci.get('argondash', '@global[0]', 'dark_primary');
-		blur_radius      = uci.get('argondash', '@global[0]', 'blur');
-		blur_radius_dark = uci.get('argondash', '@global[0]', 'blur_dark');
-		blur_opacity     = uci.get('argondash', '@global[0]', 'transparency');
-		blur_opacity_dark = uci.get('argondash', '@global[0]', 'transparency_dark');
-		mode             = uci.get('argondash', '@global[0]', 'mode');
-		sidebar_from     = uci.get('argondash', '@global[0]', 'sidebar_from') ?? sidebar_from;
-		sidebar_to       = uci.get('argondash', '@global[0]', 'sidebar_to')   ?? sidebar_to;
-		banner_from      = uci.get('argondash', '@global[0]', 'banner_from')  ?? banner_from;
-		banner_to        = uci.get('argondash', '@global[0]', 'banner_to')    ?? banner_to;
-		bar_color = (mode == 'dark') ? dark_primary : primary;
-	}
+	const dark_css = '';
+	const mode = 'normal';
+	const primary = '#5e72e4';
+	const dark_primary = '#344675';
+	const blur_r = '10';
+	const blur_r_dark = '10';
+	const blur_op = '0.5';
+	const blur_op_dark = '0.5';
+	const sb_from = '#42424a';
+	const sb_to = '#191919';
+	const bn_from = '#42424a';
+	const bn_to = '#191919';
+	const bar_color = primary;
 -%}
 <!DOCTYPE html>
 <html lang="{{ dispatcher.lang }}">
@@ -47,95 +33,85 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta name="darkreader-lock">
 	<title>{{ striptags(`${hostname}${dispatched?.title ? ` | ${_(dispatched.title)}` : ''}`) }} - LuCI</title>
-	<meta name="robots" content="noindex, nofollow">
 	<meta name="theme-color" content="{{ bar_color }}">
 	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
 	<link rel="manifest" href="{{ media }}/icon/manifest.json" crossorigin="use-credentials">
 	<link rel="stylesheet" href="{{ media }}/css/cascade.css">
-	<style title="text/css">
-		{% if (mode == 'normal'): %}
-		@media (prefers-color-scheme: dark) { {{ dark_css }} }
-		{% endif %}
-		{% if (mode == 'dark'): %}
-		{{ dark_css }}
-		{% endif %}
+	<style>
+		{% if (mode == 'normal'): %}@media (prefers-color-scheme: dark) { {{ dark_css }} }{% endif %}
+		{% if (mode == 'dark'): %}{{ dark_css }}{% endif %}
 		:root {
-			{% if (primary): %}--primary: {{ primary }};{% endif %}
-			{% if (dark_primary): %}--dark-primary: {{ dark_primary }};{% endif %}
-			{% if (blur_radius): %}--blur-radius: {{ blur_radius }}px;{% endif %}
-			{% if (blur_opacity): %}--blur-opacity: {{ blur_opacity }};{% endif %}
-			{% if (blur_radius_dark): %}--blur-radius-dark: {{ blur_radius_dark }}px;{% endif %}
-			{% if (blur_opacity_dark): %}--blur-opacity-dark: {{ blur_opacity_dark }};{% endif %}
-			--sidebar-bg-from: {{ sidebar_from }};
-			--sidebar-bg-to: {{ sidebar_to }};
-			--page-banner-from: {{ banner_from }};
-			--page-banner-to: {{ banner_to }};
+			--primary: {{ primary }};
+			--dark-primary: {{ dark_primary }};
+			--blur-radius: {{ blur_r }}px;
+			--blur-opacity: {{ blur_op }};
+			--blur-radius-dark: {{ blur_r_dark }}px;
+			--blur-opacity-dark: {{ blur_op_dark }};
+			--sidebar-bg-from: {{ sb_from }};
+			--sidebar-bg-to: {{ sb_to }};
+			--page-banner-from: {{ bn_from }};
+			--page-banner-to: {{ bn_to }};
 		}
 	</style>
-	{% if (dispatched?.css): %}
-	<link rel="stylesheet" href="{{ resource }}/{{ dispatched.css }}">
-	{% endif %}
-	{% if (css): %}
-	<style title="text/css">{{ css }}</style>
-	{% endif %}
+	{% if (css): %}<style>{{ css }}</style>{% endif %}
 	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
 	<script src="{{ resource }}/cbi.js"></script>
 </head>
 <body class="lang_{{ dispatcher.lang }} {{ entityencode(striptags(dispatched?.title ?? ''), true) }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
-	{% if (!blank_page): %}
-	<div class="main">
-		<div class="main-left" id="mainmenu" style="display:none">
-			<div class="sidenav-header d-flex align-items-center">
-				<a class="brand" href="#">{{ hostname }}</a>
-				<div class="ml-auto">
-					<div class="sidenav-toggler d-none d-xl-block active" data-action="sidenav-unpin" data-target="#sidenav-main">
-						<div class="sidenav-toggler-inner">
-							<i class="sidenav-toggler-line"></i>
-							<i class="sidenav-toggler-line"></i>
-							<i class="sidenav-toggler-line"></i>
-						</div>
+{% if (!blank_page): %}
+<div class="main">
+	<div class="main-left" id="mainmenu" style="display:none">
+		<div class="sidenav-header d-flex align-items-center">
+			<a class="brand" href="#">{{ hostname }}</a>
+			<div class="ml-auto">
+				<div class="sidenav-toggler d-none d-xl-block active" data-action="sidenav-unpin" data-target="#sidenav-main">
+					<div class="sidenav-toggler-inner">
+						<i class="sidenav-toggler-line"></i>
+						<i class="sidenav-toggler-line"></i>
+						<i class="sidenav-toggler-line"></i>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div class="main-right">
-			<header class="bg-primary">
-				<div class="fill">
-					<div class="container">
-						<div class="flex1">
-							<a class="showSide"></a>
-							<a class="brand" href="#">{{ hostname }}</a>
-						</div>
-						<div class="status" id="indicators"></div>
-					</div>
-				</div>
-			</header>
-			<div class="darkMask"></div>
-			<div id="maincontent">
+	</div>
+	<div class="main-right">
+		<header class="bg-primary">
+			<div class="fill">
 				<div class="container">
-					{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
-					<div class="alert-message error">
-						<h4>{{ _('No password set!') }}</h4>
-						<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
-						{% if (dispatcher.lookup('admin/system/admin')): %}
-						<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/admin') }}">{{ _('Go to password configuration...') }}</a></div>
-						{% endif %}
+					<div class="flex1">
+						<a class="showSide"></a>
+						<a class="brand" href="#">{{ hostname }}</a>
 					</div>
+					<div class="status" id="indicators"></div>
+				</div>
+			</div>
+		</header>
+		<div class="darkMask"></div>
+		<div id="maincontent">
+			<div class="container">
+				{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
+				<div class="alert-message warning">
+					<h4>{{ _('No password set!') }}</h4>
+					<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
+					{% if (dispatcher.lookup('admin/system/admin')): %}
+					<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/admin') }}">{{ _('Go to password configuration...') }}</a></div>
 					{% endif %}
-					{% if (boardinfo?.rootfs_type == 'initramfs'): %}
+				</div>
+				{% endif %}
+				{% if (boardinfo?.rootfs_type == 'initramfs'): %}
+				<div class="alert-message warning">
+					<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
+					<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
+					{% if (dispatcher.lookup('admin/system/flash')): %}
+					<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/flash') }}">{{ _('Go to firmware upgrade...') }}</a></div>
+					{% endif %}
+				</div>
+				{% endif %}
+				<noscript>
 					<div class="alert-message warning">
-						<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
-						<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
-						{% if (dispatcher.lookup('admin/system/flash')): %}
-						<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/flash') }}">{{ _('Go to firmware upgrade...') }}</a></div>
-						{% endif %}
+						<h4>{{ _('JavaScript required!') }}</h4>
+						<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
 					</div>
-					{% endif %}
-					<noscript>
-						<div class="alert-message warning">
-							<h4>{{ _('JavaScript required!') }}</h4>
-							<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
-						</div>
-					</noscript>
-					<div id="tabmenu" style="display:none"></div>
-	{% endif %}
+				</noscript>
+				<div id="tabmenu" style="display:none"></div>
+{% endif %}
