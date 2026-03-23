@@ -1,151 +1,124 @@
 {#
-	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-bootstrap and MUI and Argon Template
-
 	luci-theme-argondash
 	Copyright 2026 evoll <evoll@qq.com>
-
-	Have a bug? Please create an issue here on GitHub!
-	https://github.com/evoll/luci-theme-argondash/issues
-
-	luci-theme-bootstrap:
-	Copyright 2008 Steven Barth <steven@midlink.org>
-	Copyright 2008-2016 Jo-Philipp Wich <jow@openwrt.org>
-	Copyright 2012 David Menting <david@nut-bolt.nl>
-
-	MUI:
-	https://github.com/muicss/mui
-	ArgonDash Theme
-	https://demos.creative-tim.com/argon-dashboard/index.html
-
-	Licensed to the public under the Apache License 2.0
+	Licensed to the public under the Apache License 2.0.
 -#}
 
-{% include("themes/" + theme + "/out_header_login") %}
+{% include('header', { blank_page: true }) %}
+
 {%
 	import * as fs from 'fs';
-	import { cursor } from 'uci';
-	import { rand } from 'math';
 
-	let cfg = cursor();
-
-	//Fetch Local Background Media
-
-	const imageTypes = " jpg jpeg png gif webp ";
-	const videoTypes = " mp4 webm ";
-	const allTypes = imageTypes + videoTypes;
+	const imageTypes = ' jpg jpeg png gif webp ';
+	const videoTypes = ' mp4 webm ';
+	const allTypes   = imageTypes + videoTypes;
 
 	function fetchMedia(path, themeDir) {
-		let backgroundTable = [];
+		let bgTable = [];
 		for (f in (fs.lsdir(path) ?? [])) {
-			// FIX: split(f, '.') and take the LAST element, not [1].
-			// A filename like "my.background.jpg" with [1] gives "background" instead of "jpg".
 			let parts = split(f, '.');
-			let ext = lc(parts?.[length(parts) - 1]);
-			if (ext && index(allTypes, " " + ext + " ") != -1) {
-				let bg = {};
-				bg.type = ext;
-				bg.url = themeDir + f;
-				push(backgroundTable, bg);
-			}
+			let ext   = lc(parts?.[length(parts) - 1] ?? '');
+			if (ext && index(allTypes, ' ' + ext + ' ') !== -1)
+				push(bgTable, { type: ext, url: themeDir + f });
 		}
-		return backgroundTable;
+		return bgTable;
 	}
 
 	function selectBackground(themeDir) {
-		let bgUrl = media + "/img/bg1.jpg";
-		let backgroundType = "Image";
-		let mimeType = "";
+		let bgUrl  = media + '/img/bg1.jpg';
+		let bgType = 'Image';
+		let mime   = '';
 
-		if (fs.access("/etc/config/argondash")) {
-			let online_wallpaper = cfg.get_first('argondash', 'global', 'online_wallpaper') ?? (cfg.get_first('argondash', 'global', 'bing_background') == '1' ? 'bing' : null);
-			if (online_wallpaper && online_wallpaper != "none") {
-				const picurl = ubus.call("luci.argondash_wallpaper", "get_url") ?? {};
-				if (picurl?.url) {
-					bgUrl = picurl.url;
-					return {bgUrl, backgroundType, mimeType};
-				}
+		let online = uci.get('argondash', '@global[0]', 'online_wallpaper');
+		if (!online) {
+			const bing = uci.get('argondash', '@global[0]', 'bing_background');
+			online = (bing == '1') ? 'bing' : null;
+		}
+
+		if (online && online != 'none') {
+			const picurl = ubus.call('luci.argondash_wallpaper', 'get_url') ?? {};
+			if (picurl?.url) {
+				bgUrl = picurl.url;
+				return { bgUrl, bgType, mime };
 			}
 		}
 
-		let background = fetchMedia("/www" + themeDir, themeDir);
-		if ( length(background) > 0 ) {
-			let currentBg = background[(rand() % length(background))];
-			bgUrl = currentBg.url;
-			if (index(videoTypes, " " + currentBg.type + " ") != -1) {
-				backgroundType = "Video";
-				mimeType = "video/" + currentBg.type;
+		const bgs = fetchMedia('/www' + themeDir, themeDir);
+		if (length(bgs) > 0) {
+			import { rand } from 'math';
+			const cur = bgs[rand() % length(bgs)];
+			bgUrl = cur.url;
+			if (index(videoTypes, ' ' + cur.type + ' ') !== -1) {
+				bgType = 'Video';
+				mime   = 'video/' + cur.type;
 			}
 		}
-
-		return {bgUrl, backgroundType, mimeType};
+		return { bgUrl, bgType, mime };
 	}
 
-	const boardinfo = ubus.call("system", "board");
-	const hostname = striptags(boardinfo?.hostname ?? '?');
-	const themeDir = media + "/background/";
-	const bgArry = selectBackground(themeDir);
-
+	const hostname = striptags(ubus.call('system', 'board')?.hostname ?? '?');
+	const themeDir = media + '/background/';
+	const bg       = selectBackground(themeDir);
 %}
-<!-- Login Page Start -->
+
 <div class="login-page">
-	{% if ( bgArry.backgroundType == "Video" ): %}
-	<!-- Video Player Start -->
+{% if (bg.bgType == 'Video'): %}
 	<div class="video">
 		<video autoplay loop muted id="video">
-			<source src="{{ bgArry.bgUrl }}" type="{{ bgArry.mimeType }}">
+			<source src="{{ bg.bgUrl }}" type="{{ bg.mime }}">
 		</video>
 	</div>
 	<div class="volume-control mute"></div>
 	<script>
-		document.querySelector(".volume-control").addEventListener("click", function(){
-			if(this.classList.contains("mute")){
-				this.classList.remove("mute");
-				document.getElementById("video").muted = false;
-			}else{
-				this.classList.add("mute");
-				document.getElementById("video").muted = true;
-			}
+		document.querySelector('.volume-control').addEventListener('click', function() {
+			var v = document.getElementById('video');
+			this.classList.toggle('mute');
+			v.muted = !v.muted;
 		});
 	</script>
-	<!-- Video Player End -->
-	{% else %}
-	<!-- Image Background Start -->
-	<div class="main-bg" id="main-bg" style="background-image:url({{ bgArry.bgUrl }})"></div>
-	<!-- Image Background End -->
-	{% endif %}
-	<!-- Login Container Start -->
+{% else %}
+	<div class="main-bg" style="background-image:url({{ bg.bgUrl }})"></div>
+{% endif %}
+
 	<div class="login-container">
 		<div class="login-form">
-			<!-- Logo Start -->
 			<a class="brand" href="/"><img src="{{ media }}/img/argondash.svg" class="icon">
 				<span class="brand-text">{{ hostname }}</span>
 			</a>
-			<!-- Logo End -->
-			<!-- Login Form Start -->
-			<form class="form-login" method="post" action="{{ http.getenv("REQUEST_URI") }}">
 
-				{%- if (fuser): %}
-				<div class="errorbox">{{ _('Invalid username and/or password! Please try again.') }}</div>
-				{% endif -%}
+			<section hidden>
+				<form method="post" class="cbi-map">
+					<div class="cbi-section"><div class="cbi-section-node">
+						<div class="cbi-value">
+							<label class="cbi-value-title" for="luci_username">{{ _('Username') }}</label>
+							<div class="cbi-value-field">
+								<input name="luci_username" id="luci_username" type="text" autocomplete="username" value="{{ entityencode(duser, true) }}">
+							</div>
+						</div>
+						<div class="cbi-value">
+							<label class="cbi-value-title" for="luci_password">{{ _('Password') }}</label>
+							<div class="cbi-value-field">
+								<input name="luci_password" id="luci_password" type="password" autocomplete="current-password">
+							</div>
+						</div>
+					</div></div>
+				</form>
+				{% if (fuser): %}
+				<div class="alert-message error">{{ _('Invalid username and/or password! Please try again.') }}</div>
+				{% endif %}
+				<button class="btn cbi-button-positive important">{{ _('Log in') }}</button>
+			</section>
 
-				<div class="input-container">
-					<div class="input-group user-icon">
-						<input class="cbi-input-user" id="cbi-input-user" type="text" name="luci_username" value="{{ entityencode(duser, true) }}" />
-						<label class="border" for="cbi-input-user"></label>
-					</div>
-					<div class="input-group pass-icon">
-						<input class="cbi-input-password" id="cbi-input-password" type="password" name="luci_password" />
-						<label class="border" for="cbi-input-password"></label>
-					</div>
-				</div>
-				<div>
-					<input type="submit" value="{{ _('Log in') }}" class="cbi-button cbi-button-apply" />
-				</div>
-			</form>
-			<!-- Login Form End -->
-			<script type="text/javascript">//<![CDATA[
-				var input = document.getElementsByName('luci_password')[0];
-				if (input)
-					input.focus();
-			//]]></script>
-{% include("themes/" + theme + "/footer_login") %}
+			<div id="view">
+				<div class="spinning">{{ _('Loading view…') }}</div>
+				<script>
+					L.require('ui').then(function(ui) {
+						ui.instantiateView('argondash.sysauth');
+					});
+				</script>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% include('footer', { blank_page: true }) %}
