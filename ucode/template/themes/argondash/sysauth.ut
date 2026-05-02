@@ -1,0 +1,188 @@
+{#
+	luci-theme-argondash
+	Copyright 2026 evoll <evoll@qq.com>
+	Licensed to the public under the Apache License 2.0.
+-#}
+{%
+	import { readfile, access } from 'fs';
+	import * as fs from 'fs';
+	import { rand } from 'math';
+
+	const boardinfo = ubus.call('system', 'board');
+	const hostname  = striptags(boardinfo?.hostname ?? '?');
+
+	http.prepare_content('text/html; charset=UTF-8');
+
+	/* Sanitization helpers — prevent CSS injection via UCI values */
+	function san_color(v, fallback) {
+		return (v && match(v, /^#[0-9a-fA-F]{3,8}$/)) ? v : fallback;
+	}
+	function san_mode(v) {
+		return (v === 'dark' || v === 'light') ? v : 'normal';
+	}
+
+	let mode         = 'normal';
+	let primary      = '#5e72e4';
+	let dark_primary = '#344675';
+	let sb_from      = '#42424a';
+	let sb_to        = '#191919';
+	const dark_css   = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
+
+	if (access('/etc/config/argondash')) {
+		primary      = san_color(uci.get('argondash', '@global[0]', 'primary'),      primary);
+		dark_primary = san_color(uci.get('argondash', '@global[0]', 'dark_primary'), dark_primary);
+		mode         = san_mode( uci.get('argondash', '@global[0]', 'mode'));
+		sb_from      = san_color(uci.get('argondash', '@global[0]', 'sidebar_from'), sb_from);
+		sb_to        = san_color(uci.get('argondash', '@global[0]', 'sidebar_to'),   sb_to);
+	}
+
+	const bar_color = (mode == 'dark') ? dark_primary : primary;
+
+	/* ── Version parsing ────────────────────────────────────────────────
+	   luciname    = "LuCI openwrt-24.10 branch"  → name="LuCI" branch="openwrt-24.10"
+	   luciversion = "git-26.031.54597-bcbe067"   → build="26.031.54597-bcbe067"
+	   ─────────────────────────────────────────────────────────────────── */
+	const luci_parts  = split(version.luciname   ?? '', ' ');
+	const luci_name   = luci_parts[0] ?? 'LuCI';
+	const luci_branch = luci_parts[1] ?? '';
+	const ver_parts   = split(version.luciversion ?? '', '-');
+	const luci_build  = (length(ver_parts) >= 3)
+	                  ? (ver_parts[1] + '-' + ver_parts[2])
+	                  : (version.luciversion ?? '');
+	const dist_name   = version.distname    ?? 'OpenWrt';
+	const dist_ver    = version.distversion ?? '';
+	const dist_url    = version.disturl     ?? 'https://openwrt.org';
+	const theme_ver   = trim(readfile('/www/luci-static/argondash/version') ?? '1.0.1');
+
+	/* Background selection */
+	const imageTypes = ' jpg jpeg png gif webp ';
+	const videoTypes = ' mp4 webm ';
+	const allTypes   = imageTypes + videoTypes;
+	const bgDir      = media + '/background/';
+
+	let bgUrl  = media + '/img/bg1.jpg';
+	let bgType = 'Image';
+	let bgMime = '';
+
+	let online = uci.get('argondash', '@global[0]', 'online_wallpaper') ?? null;
+
+	if (online && online != 'none') {
+		const picurl = ubus.call('luci.argondash_wallpaper', 'get_url') ?? {};
+		if (picurl?.url) {
+			bgUrl = picurl.url;
+		} else {
+			online = null;
+		}
+	}
+
+	if (!online || online == 'none') {
+		let files = [];
+		for (f in (fs.lsdir('/www' + bgDir) ?? [])) {
+			let parts = split(f, '.');
+			let ext   = lc(parts?.[length(parts) - 1] ?? '');
+			if (ext && index(allTypes, ' ' + ext + ' ') !== -1)
+				push(files, { type: ext, url: bgDir + f });
+		}
+		if (length(files) > 0) {
+			const cur = files[rand() % length(files)];
+			bgUrl = cur.url;
+			if (index(videoTypes, ' ' + cur.type + ' ') !== -1) {
+				bgType = 'Video';
+				bgMime = 'video/' + cur.type;
+			}
+		}
+	}
+-%}
+<!DOCTYPE html>
+<html lang="{{ dispatcher.lang }}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>{{ striptags(hostname) }} - LuCI</title>
+	<meta name="theme-color" content="{{ bar_color }}">
+	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
+	<link rel="stylesheet" href="{{ media }}/css/cascade.css">
+	<style>
+		{% if (mode == 'normal'): %}
+		@media (prefers-color-scheme: dark) {
+		{{ dark_css }}
+		}
+		{% endif %}
+		{% if (mode == 'dark'): %}
+		{{ dark_css }}
+		{% endif %}
+		:root {
+			--primary: {{ primary }};
+			--dark-primary: {{ dark_primary }};
+			--sidebar-bg-from: {{ sb_from }};
+			--sidebar-bg-to: {{ sb_to }};
+		}
+	</style>
+</head>
+<body>
+<div class="login-page">
+
+{% if (bgType == 'Video'): %}
+	<div class="video">
+		<video autoplay loop muted id="video">
+			<source src="{{ entityencode(bgUrl, true) }}" type="{{ entityencode(bgMime, true) }}">
+		</video>
+	</div>
+	<div class="volume-control mute"></div>
+	<script>
+		document.querySelector('.volume-control').addEventListener('click', function() {
+			var v = document.getElementById('video');
+			this.classList.toggle('mute');
+			v.muted = !v.muted;
+		});
+	</script>
+{% else %}
+	<div class="main-bg" id="main-bg" style="background-image:url({{ entityencode(bgUrl, true) }})"></div>
+{% endif %}
+
+	<div class="login-container">
+		<div class="login-form">
+			<a class="brand" href="/"><img src="{{ media }}/img/argondash.svg" class="icon">
+				<span class="brand-text">{{ hostname }}</span>
+			</a>
+
+			<form class="form-login" method="post" action="{{ entityencode(http.getenv('REQUEST_URI'), true) }}">
+				{%- if (fuser): %}
+				<div class="errorbox">{{ _('Invalid username and/or password! Please try again.') }}</div>
+				{% endif -%}
+				<div class="input-container">
+					<div class="input-group user-icon">
+						<input class="cbi-input-user" id="cbi-input-user" type="text" name="luci_username" value="{{ entityencode(duser, true) }}" autocomplete="username" />
+						<label class="border" for="cbi-input-user"></label>
+					</div>
+					<div class="input-group pass-icon">
+						<input class="cbi-input-password" id="cbi-input-password" type="password" name="luci_password" autocomplete="current-password" />
+						<label class="border" for="cbi-input-password"></label>
+					</div>
+				</div>
+				<div>
+					<input type="submit" value="{{ _('Log in') }}" class="cbi-button cbi-button-apply" />
+				</div>
+			</form>
+
+			<script>//<![CDATA[
+				var p = document.getElementById('cbi-input-password');
+				if (p) p.focus();
+			//]]></script>
+
+			<footer>
+				<div class="ftc">
+					<a href="https://github.com/openwrt/luci" target="_blank" rel="noreferrer" class="luci-link">{{ luci_name }} {{ luci_branch }} ({{ luci_build }})</a>
+				</div>
+				<div class="ftc">
+					<a href="https://github.com/evoll/luci-theme-argondash" target="_blank" rel="noreferrer">ArgonDash v{{ theme_ver }}</a>
+				</div>
+				<div class="ftc">
+					<a href="{{ entityencode(dist_url, true) }}" target="_blank" rel="noreferrer">{{ dist_name }} {{ dist_ver }}</a>
+				</div>
+			</footer>
+		</div>
+	</div>
+</div>
+</body>
+</html>

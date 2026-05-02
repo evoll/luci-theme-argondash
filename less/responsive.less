@@ -1,0 +1,308 @@
+// Responsive styles for luci-theme-argondash
+// Source of truth: htdocs/luci-static/argondash/css/cascade.css
+// This file mirrors the @media blocks from cascade.css.
+
+// 1. IE High Contrast
+// ==========================================================================
+@media all and (-ms-high-contrast: none) {
+
+    *::-ms-backdrop, .sidenav-header::before {
+        background-image: none;
+    }
+
+    *::-ms-backdrop, .main-right>#maincontent>.container {
+        min-width: auto;
+    }
+}
+
+// 2. Large Desktop (1600px and below)
+// ==========================================================================
+@media screen and (max-width: 1600px) {
+
+    header>.fill>.container>#logo {
+        margin: 0 2.5rem 0 0.5rem;
+    }
+
+    .main-left {
+        width: 14rem;
+    }
+}
+
+// 3. Medium Desktop (1366px and below)
+// ==========================================================================
+@media screen and (max-width: 1366px) {
+
+    body:not(.logged-in) .showSide {
+        display: none;
+    }
+
+    .main-left {
+        width: 13rem;
+    }
+
+    header>.fill>.container>.flex1>.showSide {
+        display: inline-block;
+        font-size: 1.4rem;
+        color: var(--header-color, #344767);
+
+        &:hover { text-decoration: none; }
+    }
+
+    header>.fill>.container>.flex1>.brand {
+        display: inline-block;
+    }
+}
+
+// 4. Small Desktop / Tablet Landscape (1152px and below)
+// ==========================================================================
+@media screen and (max-width: 1152px) {
+
+    .main-left {
+        width: 12.5rem;
+    }
+
+    .node-main-login footer {
+        display: none;
+    }
+
+    footer {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.15rem;
+    }
+}
+
+// 5. Tablet / Mobile Landscape (768px and below)
+// ==========================================================================
+@media screen and (max-width: 768px) {
+
+    body {
+        font-size: 0.875rem;
+    }
+
+    .cbi-progressbar::after {
+        font-size: 0.6rem;
+    }
+
+    // Mobile sidebar — fixed overlay, full height
+    // top/left/height required so position:fixed works correctly in all browsers
+    .main-left {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 300;   // above header (z-index:200) and darkMask (z-index:99)
+        width: 0;
+
+        &.active {
+            width: 13rem;
+        }
+
+        // Flat left edge on mobile, rounded right only when open
+        border-radius: 0;
+        &.active { border-radius: 0 16px 16px 0; }
+
+        // Sidebar brand: shift right to clear FAB ✕ button
+        .sidenav-header {
+            padding-left: 3rem;
+        }
+    }
+
+    .main-right {
+        width: 100%;
+
+        &.active {
+            overflow-y: hidden;
+        }
+    }
+
+    .darkMask.active {
+        display: block;
+    }
+
+    // Old showSide toggle button (used on tablets where FAB may not be shown)
+    .showSide {
+        padding: 0.1rem;
+        position: relative;
+        z-index: 99;
+        display: inline-block !important;
+
+        &::before {
+            font-family: 'argon' !important;
+            font-style: normal !important;
+            font-weight: normal !important;
+            font-variant: normal !important;
+            text-transform: none !important;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            content: "\e20e";
+            font-size: 1.7rem;
+            color: var(--header-color, #344767) !important;
+        }
+    }
+
+    header>.fill>.container>.flex1>.brand {
+        display: inline-block;
+        color: var(--header-color, #344767);
+    }
+
+    .main>.main-left>.nav>.slide>.slide-menu>li>a {
+        font-size: 0.875rem;
+    }
+
+    // Header: full-width on mobile (no inset margin/border-radius override)
+    // Border-radius from the base header rule is kept (0 0 14px 14px).
+    header {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    // Brand text shifts right to clear the FAB button
+    header .fill .container .flex1 {
+        padding-left: 2.8rem;
+    }
+
+    // ── MOBILE SIDEBAR FAB ──────────────────────────────────────────────
+    // Created via JS (document.createElement + body.appendChild) to avoid
+    // the iOS fixed/overflow:auto rendering bug. CSS targets #id.class.
+    #sidebarFab.sidebar-fab {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9100;
+        width: 2.8rem;
+        height: 2.35rem;    // matches header height: 0.3+1.75+0.3rem
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        cursor: pointer;
+        display: flex !important;  // override desktop display:none
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0;
+        border: none;
+        outline: none;
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: opacity 0.15s ease;
+
+        &:active { opacity: 0.7; }
+
+        // Sync with header auto-hide
+        &.header-hidden {
+            transform: translateY(-110%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        // Three-line hamburger stripes
+        span {
+            display: block;
+            width: 1.15rem;
+            height: 2px;
+            background: var(--header-color, #344767);
+            border-radius: 2px;
+            transition: transform 0.25s ease, opacity 0.2s ease;
+            transform-origin: center;
+            pointer-events: none;
+        }
+
+        // Animate to ✕ when sidebar open
+        &.active span { background: rgba(255,255,255,.9); }
+        &.active span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+        &.active span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        &.active span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+    }
+}
+
+// 6. Mobile Portrait (600px and below)
+// ==========================================================================
+@media screen and (max-width: 600px) {
+
+    body {
+        overflow-x: hidden;
+    }
+
+    .cbi-dropdown[open]>ul.dropdown {
+        margin-bottom: 1rem;
+    }
+
+    // Login footer: three rows, one link each, centered
+    .login-page .login-container footer {
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.65rem;
+        gap: 0.1rem;
+
+        .ftc {
+            display: block;
+            width: 100%;
+            text-align: center;
+            white-space: normal;
+            overflow: visible;
+            word-break: break-word;
+        }
+    }
+}
+
+// 7. Mobile Portrait Small (480px and below)
+// ==========================================================================
+@media screen and (max-width: 480px) {
+
+    .mobile-hide {
+        display: none;
+    }
+
+    div[style*="display:grid;grid-template-columns:repeat"] {
+        .ifacebox {
+            flex-basis: 80px;
+
+            .ifacebox-body {
+                padding: 0.875rem 0.5rem;
+                font-size: 0.6rem;
+            }
+        }
+    }
+
+    // Login page — white text/icons on glassmorphism background
+    .login-page .login-container {
+        margin-left: 0rem !important;
+        width: 100%;
+
+        .login-form .form-login .input-group {
+            &::before {
+                color: rgba(255,255,255,.85);   // icon color
+            }
+
+            input {
+                color: #fff;
+                border-bottom: rgba(255,255,255,.3) 1px solid;
+                border-radius: 10px;
+            }
+        }
+    }
+}
+
+// 8. Desktop Scrollbar Styling (600px and above)
+// ==========================================================================
+@media screen and (min-width: 600px) {
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border-radius: 5px;
+        background-color: var(--light, #ced4da);
+    }
+
+    ::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+}

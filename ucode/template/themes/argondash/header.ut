@@ -1,0 +1,145 @@
+{#
+	luci-theme-argondash
+	Copyright 2026 evoll <evoll@qq.com>
+	Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	import { getuid, getspnam } from 'luci.core';
+	import { readfile, access } from 'fs';
+
+	const boardinfo = ubus.call('system', 'board');
+	const hostname  = striptags(boardinfo?.hostname ?? '?');
+
+	http.prepare_content('text/html; charset=UTF-8');
+
+	/* Sanitization helpers — prevent CSS injection via UCI values */
+	function san_color(v, fallback) {
+		return (v && match(v, /^#[0-9a-fA-F]{3,8}$/)) ? v : fallback;
+	}
+	function san_num(v, fallback) {
+		/* Sanitize blur radius: 0–100 px */
+		const n = +v;
+		return (!isnan(n) && n >= 0 && n <= 100) ? sprintf('%.2f', n) : fallback;
+	}
+	function san_opacity(v, fallback) {
+		/* Sanitize CSS opacity: 0.0–1.0 */
+		const n = +v;
+		return (!isnan(n) && n >= 0 && n <= 1) ? sprintf('%.2f', n) : fallback;
+	}
+	function san_mode(v) {
+		return (v === 'dark' || v === 'light') ? v : 'normal';
+	}
+
+	let mode         = 'normal';
+	let primary      = '#5e72e4';
+	let dark_primary = '#344675';
+	let blur_r       = '10';
+	let blur_r_dark  = '10';
+	let blur_op      = '0.5';
+	let blur_op_dark = '0.5';
+	let sb_from      = '#42424a';
+	let sb_to        = '#191919';
+	let bn_from      = '#42424a';
+	let bn_to        = '#191919';
+	const dark_css   = readfile('/www/luci-static/argondash/css/dark.css') ?? '';
+
+	if (access('/etc/config/argondash')) {
+		primary      = san_color(uci.get('argondash', '@global[0]', 'primary'),           primary);
+		dark_primary = san_color(uci.get('argondash', '@global[0]', 'dark_primary'),       dark_primary);
+		blur_r       = san_num(  uci.get('argondash', '@global[0]', 'blur'),               blur_r);
+		blur_r_dark  = san_num(  uci.get('argondash', '@global[0]', 'blur_dark'),          blur_r_dark);
+		blur_op      = san_opacity(uci.get('argondash', '@global[0]', 'transparency'),       blur_op);
+		blur_op_dark = san_opacity(uci.get('argondash', '@global[0]', 'transparency_dark'),  blur_op_dark);
+		mode         = san_mode( uci.get('argondash', '@global[0]', 'mode'));
+		sb_from      = san_color(uci.get('argondash', '@global[0]', 'sidebar_from'),       sb_from);
+		sb_to        = san_color(uci.get('argondash', '@global[0]', 'sidebar_to'),         sb_to);
+		bn_from      = san_color(uci.get('argondash', '@global[0]', 'banner_from'),        bn_from);
+		bn_to        = san_color(uci.get('argondash', '@global[0]', 'banner_to'),          bn_to);
+	}
+
+	const bar_color = (mode == 'dark') ? dark_primary : primary;
+-%}
+<!DOCTYPE html>
+<html lang="{{ dispatcher.lang }}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>{{ striptags(`${hostname}${dispatched?.title ? ` | ${_(dispatched.title)}` : ''}`) }} - LuCI</title>
+	<meta name="theme-color" content="{{ bar_color }}">
+	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
+	<link rel="manifest" href="{{ media }}/icon/manifest.json" crossorigin="use-credentials">
+	<link rel="stylesheet" href="{{ media }}/css/cascade.css">
+	<style>
+		{% if (mode == 'normal'): %}@media (prefers-color-scheme: dark) {
+{{ dark_css }}
+}{% endif %}
+		{% if (mode == 'dark'): %}
+{{ dark_css }}
+{% endif %}
+		:root {
+			--primary: {{ primary }};
+			--dark-primary: {{ dark_primary }};
+			--blur-radius: {{ blur_r }}px;
+			--blur-opacity: {{ blur_op }};
+			--blur-radius-dark: {{ blur_r_dark }}px;
+			--blur-opacity-dark: {{ blur_op_dark }};
+			--sidebar-bg-from: {{ sb_from }};
+			--sidebar-bg-to: {{ sb_to }};
+			--page-banner-from: {{ bn_from }};
+			--page-banner-to: {{ bn_to }};
+		}
+	</style>
+	{% if (css): %}<style>{{ css }}</style>{% endif %}
+	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
+	<script src="{{ resource }}/cbi.js"></script>
+</head>
+<body class="lang_{{ dispatcher.lang }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
+{% if (!blank_page): %}
+<div class="main">
+	<div class="main-left" id="mainmenu" style="display:none">
+		<div class="sidenav-header">
+			<a class="brand" href="#">{{ hostname }}</a>
+		</div>
+	</div>
+	<div class="main-right">
+		<header class="bg-primary">
+			<div class="fill">
+				<div class="container">
+					<div class="flex1">
+						<a class="showSide"></a>
+						<a class="brand" href="#">{{ hostname }}</a>
+					</div>
+					<div class="status" id="indicators"></div>
+				</div>
+			</div>
+		</header>
+		<div class="darkMask"></div>
+		<div id="maincontent">
+			<div class="container">
+				{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
+				<div class="alert-message warning">
+					<h4>{{ _('No password set!') }}</h4>
+					<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
+					{% if (dispatcher.lookup('admin/system/admin')): %}
+					<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/admin') }}">{{ _('Go to password configuration...') }}</a></div>
+					{% endif %}
+				</div>
+				{% endif %}
+				{% if (boardinfo?.rootfs_type == 'initramfs'): %}
+				<div class="alert-message warning">
+					<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
+					<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
+					{% if (dispatcher.lookup('admin/system/flash')): %}
+					<div class="right"><a class="btn" href="{{ dispatcher.build_url('admin/system/flash') }}">{{ _('Go to firmware upgrade...') }}</a></div>
+					{% endif %}
+				</div>
+				{% endif %}
+				<noscript>
+					<div class="alert-message warning">
+						<h4>{{ _('JavaScript required!') }}</h4>
+						<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+					</div>
+				</noscript>
+				<div id="tabmenu" style="display:none"></div>
+{% endif %}

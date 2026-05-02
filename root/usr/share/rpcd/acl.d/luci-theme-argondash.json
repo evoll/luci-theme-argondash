@@ -1,0 +1,11 @@
+{
+    "luci-theme-argondash": {
+        "description": "Grant UCI and ubus access for luci-theme-argondash",
+        "read": {
+            "uci": [ "argondash" ],
+            "ubus": {
+                "luci.argondash_wallpaper": [ "get_url" ]
+            }
+        }
+    }
+}

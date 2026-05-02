@@ -1,0 +1,86 @@
+# luci-theme-argondash — Translation template
+# Copyright (C) 2026 evoll
+# Licensed under the Apache License 2.0
+#
+# Extracted from:
+#   ucode/template/themes/argondash/header.ut
+#   ucode/template/themes/argondash/sysauth.ut
+#   htdocs/luci-static/resources/view/argondash/sysauth.js  (removed)
+#   htdocs/luci-static/resources/menu-argondash.js
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-theme-argondash 1.0.1\n"
+"Report-Msgid-Bugs-To: https://github.com/evoll/luci-theme-argondash/issues\n"
+"POT-Creation-Date: 2026-04-27\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. header.ut — no-password warning title
+#: ucode/template/themes/argondash/header.ut
+msgid "No password set!"
+msgstr ""
+
+#. header.ut — no-password warning body
+#: ucode/template/themes/argondash/header.ut
+msgid "There is no password set on this router. Please configure a root password to protect the web interface."
+msgstr ""
+
+#. header.ut — link to password page
+#: ucode/template/themes/argondash/header.ut
+msgid "Go to password configuration..."
+msgstr ""
+
+#. header.ut — initramfs warning title
+#: ucode/template/themes/argondash/header.ut
+msgid "System running in recovery (initramfs) mode."
+msgstr ""
+
+#. header.ut — initramfs warning body
+#: ucode/template/themes/argondash/header.ut
+msgid "No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade"
+msgstr ""
+
+#. header.ut — link to flash/upgrade page
+#: ucode/template/themes/argondash/header.ut
+msgid "Go to firmware upgrade..."
+msgstr ""
+
+#. header.ut — noscript warning title
+#: ucode/template/themes/argondash/header.ut
+msgid "JavaScript required!"
+msgstr ""
+
+#. header.ut — noscript warning body
+#: ucode/template/themes/argondash/header.ut
+msgid "You must enable JavaScript in your browser or LuCI will not work properly."
+msgstr ""
+
+#. header.ut — Lua compat mode indicator (shown in footer)
+#: ucode/template/themes/argondash/header.ut
+msgid "Lua compatibility mode active"
+msgstr ""
+
+#. sysauth.ut — login form submit button label
+#: ucode/template/themes/argondash/sysauth.ut
+msgid "Log in"
+msgstr ""
+
+#. sysauth.ut — error shown after failed login attempt
+#: ucode/template/themes/argondash/sysauth.ut
+msgid "Invalid username and/or password! Please try again."
+msgstr ""
+
+#. menu-argondash.js — modal title shown while authenticating (legacy path)
+#: htdocs/luci-static/resources/menu-argondash.js
+msgid "Authorization Required"
+msgstr ""
+
+#. menu-argondash.js — spinner label during form submit
+#: htdocs/luci-static/resources/menu-argondash.js
+msgid "Logging in\u2026"
+msgstr ""

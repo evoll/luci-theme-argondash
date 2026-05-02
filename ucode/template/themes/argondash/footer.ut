@@ -1,0 +1,44 @@
+{#
+	luci-theme-argondash
+	Copyright 2026 evoll <evoll@qq.com>
+	Licensed to the public under the Apache License 2.0.
+-#}
+{%
+	/* FIX: explicit import — не полагаемся на shared scope с header.ut.
+	   header.ut импортирует readfile первым в общем include()-scope,
+	   что работает в LuCI 24.10/25.12, но нарушится при изолированном
+	   выполнении или будущих изменениях scope-handling в LuCI. */
+	import { readfile } from 'fs';
+-%}
+{% if (!blank_page): %}
+{%
+	const fp_parts     = split(version.luciname   ?? '', ' ');
+	const fp_luci_name = fp_parts[0] ?? 'LuCI';
+	const fp_luci_branch = fp_parts[1] ?? '';
+	const fp_ver_parts = split(version.luciversion ?? '', '-');
+	const fp_luci_build = (length(fp_ver_parts) >= 3)
+	                    ? (fp_ver_parts[1] + '-' + fp_ver_parts[2])
+	                    : (version.luciversion ?? '');
+	const fp_dist_name = version.distname    ?? 'OpenWrt';
+	const fp_dist_ver  = version.distversion ?? '';
+	const fp_dist_rev  = version.distrevision ?? '';
+	const fp_dist_url  = version.disturl     ?? 'https://openwrt.org';
+	const fp_theme_ver = trim(readfile('/www/luci-static/argondash/version') ?? '1.0.1');
+%}
+			</div>
+		</div>
+		<footer class="mobile-hide">
+			<span>
+				Powered by <a href="https://github.com/openwrt/luci" target="_blank" rel="noreferrer">{{ fp_luci_name }} {{ fp_luci_branch }} ({{ fp_luci_build }})</a>
+				/ <a href="{{ entityencode(fp_dist_url, true) }}" target="_blank" rel="noreferrer">{{ fp_dist_name }} {{ fp_dist_ver }}-{{ fp_dist_rev }}</a>
+				/ <a href="https://github.com/evoll/luci-theme-argondash" target="_blank" rel="noreferrer">ArgonDash v{{ fp_theme_ver }}</a>
+				{% if (lua_active): %}/ {{ _('Lua compatibility mode active') }}{% endif %}
+			</span>
+			<ul class="breadcrumb pull-right" id="modemenu" style="display:none"></ul>
+		</footer>
+		<script>L.require('menu-argondash')</script>
+	</div>
+</div>
+{% endif %}
+</body>
+</html>

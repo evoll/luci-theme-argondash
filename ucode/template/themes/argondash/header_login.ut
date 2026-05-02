@@ -1,0 +1,22 @@
+{#
+	luci-theme-argondash
+	Copyright 2026 evoll <evoll@qq.com>
+	Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	const boardinfo = ubus.call('system', 'board');
+	const hostname = striptags(boardinfo?.hostname ?? '?');
+	http.prepare_content('text/html; charset=UTF-8');
+-%}
+<!DOCTYPE html>
+<html lang="{{ dispatcher.lang }}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="darkreader-lock">
+	<title>{{ striptags(hostname) }} - LuCI</title>
+	<link rel="icon" type="image/x-icon" href="{{ media }}/favicon.ico">
+	<link rel="stylesheet" href="{{ media }}/css/cascade.css">
+</head>
+<body>
