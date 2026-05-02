@@ -7,6 +7,7 @@
 {%
 	import { getuid, getspnam } from 'luci.core';
 	import { readfile, access } from 'fs';
+	import { isnan } from 'math';
 
 	const boardinfo = ubus.call('system', 'board');
 	const hostname  = striptags(boardinfo?.hostname ?? '?');
@@ -117,7 +118,7 @@
 		<div class="darkMask"></div>
 		<div id="maincontent">
 			<div class="container">
-				{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
+				{% if (getuid() == 0 && getspnam?.('root')?.pwdp === ''): %}
 				<div class="alert-message warning">
 					<h4>{{ _('No password set!') }}</h4>
 					<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
